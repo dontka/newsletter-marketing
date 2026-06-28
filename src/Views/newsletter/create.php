@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Créer Newsletter</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
     <link rel="stylesheet" href="/public/assets/style.css">
 </head>
 <body>
@@ -134,19 +135,38 @@
                         </div>
 
                         <div class="content-editor-wrap">
-                            <div class="editor-toolbar-actions" role="toolbar" aria-label="Mise en forme">
-                                <button type="button" class="format-btn" data-command="bold" title="Gras"><strong>B</strong></button>
-                                <button type="button" class="format-btn" data-command="italic" title="Italique"><em>I</em></button>
-                                <button type="button" class="format-btn" data-command="underline" title="Souligné"><u>U</u></button>
-                                <button type="button" class="format-btn" data-command="insertUnorderedList" title="Liste à puces">•</button>
-                                <button type="button" class="format-btn" data-command="formatBlock" data-value="h2" title="Titre">H2</button>
-                                <button type="button" class="format-btn" data-command="formatBlock" data-value="h3" title="Sous-titre">H3</button>
-                                <button type="button" class="format-btn" data-command="justifyLeft" title="Aligner à gauche">⇤</button>
-                                <button type="button" class="format-btn" data-command="justifyCenter" title="Centrer">⇥</button>
-                                <button type="button" class="format-btn" data-command="createLink" title="Ajouter un lien">🔗</button>
-                                <button type="button" class="format-btn" data-command="insertImage" title="Insérer une image">🖼</button>
+                            <div id="quillToolbar" class="ql-toolbar ql-snow">
+                                <span class="ql-formats">
+                                    <button class="ql-bold"></button>
+                                    <button class="ql-italic"></button>
+                                    <button class="ql-underline"></button>
+                                    <button class="ql-link"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-list" value="ordered"></button>
+                                    <button class="ql-list" value="bullet"></button>
+                                    <button class="ql-header" value="2"></button>
+                                    <button class="ql-header" value="3"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-align" value=""></button>
+                                    <button class="ql-align" value="center"></button>
+                                    <button class="ql-align" value="right"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-image"></button>
+                                </span>
                             </div>
-                            <div id="contentEditor" class="content-editor" contenteditable="true" spellcheck="true" data-placeholder="Commencez à rédiger votre newsletter..."></div>
+                            <div id="imageEditControls" class="image-edit-controls" hidden>
+                                <label for="imageWidthRange">Largeur de l’image</label>
+                                <input type="range" id="imageWidthRange" min="20" max="100" step="5" value="100">
+                                <div class="image-align-group">
+                                    <button type="button" class="image-align-btn" data-image-align="left" title="Aligner à gauche">←</button>
+                                    <button type="button" class="image-align-btn" data-image-align="center" title="Centrer">↔</button>
+                                    <button type="button" class="image-align-btn" data-image-align="right" title="Aligner à droite">→</button>
+                                </div>
+                            </div>
+                            <div id="contentEditor" class="content-editor"></div>
                             <input type="hidden" id="content" name="content" required>
                         </div>
 
@@ -205,6 +225,7 @@
     <script>
         window.savedEmailTemplates = <?php echo json_encode($templates, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
     <script src="/public/assets/script.js"></script>
 </body>
 </html>

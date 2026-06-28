@@ -66,12 +66,12 @@ function initializeMobileMenu() {
  * Éditeur de contenu marketing
  */
 function initializeNewsletterBuilder() {
-    const editor = document.getElementById('contentEditor');
+    const editorElement = document.getElementById('contentEditor');
     const hiddenContent = document.getElementById('content');
     const previewFrame = document.getElementById('previewFrame');
-    const toolbarButtons = document.querySelectorAll('.editor-toolbar-actions .format-btn');
+    const toolbarElement = document.getElementById('quillToolbar');
 
-    if (!editor || !hiddenContent || !previewFrame) {
+    if (!editorElement || !hiddenContent || !previewFrame || !toolbarElement || !window.Quill) {
         return;
     }
 
@@ -103,32 +103,131 @@ function initializeNewsletterBuilder() {
 </html>`;
     }
 
+    const quill = new Quill(editorElement, {
+        theme: 'snow',
+        modules: {
+            toolbar: toolbarElement
+        }
+    });
+
+    const imageEditControls = document.getElementById('imageEditControls');
+    const imageWidthRange = document.getElementById('imageWidthRange');
+    const imageAlignButtons = document.querySelectorAll('[data-image-align]');
+    let activeImageElement = null;
+    let isApplyingEditorContent = false;
+
+    function setEditorHtml(html) {
+        const content = html || defaultContent;
+        isApplyingEditorContent = true;
+
+        try {
+            quill.enable(false);
+            quill.setText('');
+            quill.clipboard.dangerouslyPasteHTML(0, content);
+        } finally {
+            window.setTimeout(() => {
+                isApplyingEditorContent = false;
+                quill.enable(true);
+            }, 0);
+        }
+
+        previewFrame.srcdoc = buildPreviewMarkup(content);
+    }
+
+    function updateImageControls() {
+        if (!imageEditControls || !imageWidthRange) {
+            return;
+        }
+
+        if (!activeImageElement) {
+            imageEditControls.hidden = true;
+            return;
+        }
+
+        imageEditControls.hidden = false;
+
+        const widthValue = parseInt(activeImageElement.style.width || '100', 10);
+        const safeWidth = Number.isFinite(widthValue) ? Math.min(Math.max(widthValue, 20), 100) : 100;
+        imageWidthRange.value = String(safeWidth);
+
+        const currentAlign = activeImageElement.getAttribute('data-image-align') || 'center';
+        imageAlignButtons.forEach(button => {
+            button.classList.toggle('is-active', button.getAttribute('data-image-align') === currentAlign);
+        });
+    }
+
+    function applyImageLayout(align, width) {
+        if (!activeImageElement) {
+            return;
+        }
+
+        const resolvedAlign = align || activeImageElement.getAttribute('data-image-align') || 'center';
+        const resolvedWidth = width || parseInt(activeImageElement.style.width || '100', 10) || 100;
+
+        activeImageElement.style.width = `${resolvedWidth}%`;
+        activeImageElement.style.maxWidth = '100%';
+        activeImageElement.style.height = 'auto';
+        activeImageElement.style.display = 'block';
+        activeImageElement.style.float = 'none';
+
+        if (resolvedAlign === 'left') {
+            activeImageElement.style.margin = '0';
+            activeImageElement.style.float = 'left';
+        } else if (resolvedAlign === 'right') {
+            activeImageElement.style.margin = '0 0 0 auto';
+            activeImageElement.style.float = 'right';
+        } else {
+            activeImageElement.style.margin = '0 auto';
+        }
+
+        activeImageElement.setAttribute('data-image-align', resolvedAlign);
+        syncEditorToHidden();
+    }
+
+    if (imageEditControls && imageWidthRange) {
+        quill.root.addEventListener('click', (event) => {
+            const clickedImage = event.target.closest('img');
+            if (clickedImage) {
+                activeImageElement = clickedImage;
+                updateImageControls();
+                return;
+            }
+
+            if (!event.target.closest('.image-edit-controls')) {
+                activeImageElement = null;
+                imageEditControls.hidden = true;
+            }
+        });
+
+        imageWidthRange.addEventListener('input', (event) => {
+            applyImageLayout(null, Number(event.target.value));
+        });
+
+        imageAlignButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                applyImageLayout(button.getAttribute('data-image-align'), null);
+            });
+        });
+    }
+
     function syncEditorToHidden() {
-        const value = editor.innerHTML.trim() || defaultContent;
+        if (isApplyingEditorContent) {
+            return;
+        }
+
+        const value = quill.root.innerHTML.trim() || defaultContent;
         hiddenContent.value = value;
         previewFrame.srcdoc = buildPreviewMarkup(value);
     }
 
-    function runEditorCommand(command, value = null) {
-        editor.focus();
-        if (command === 'createLink') {
-            const url = prompt('Entrez l’URL du lien', 'https://');
-            if (!url) {
-                return;
-            }
-            document.execCommand(command, false, url);
-        } else if (command === 'insertImage') {
-            insertImage();
-        } else {
-            document.execCommand(command, false, value);
-        }
-        syncEditorToHidden();
-    }
-
     function syncHiddenToEditor() {
         const value = hiddenContent.value.trim();
-        editor.innerHTML = value || defaultContent;
-        previewFrame.srcdoc = buildPreviewMarkup(editor.innerHTML);
+        if (!value) {
+            setEditorHtml(defaultContent);
+            return;
+        }
+
+        setEditorHtml(value);
     }
 
     function insertBlock(type) {
@@ -151,47 +250,15 @@ function initializeNewsletterBuilder() {
         }
 
         if (html) {
-            editor.insertAdjacentHTML('beforeend', html);
+            const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+            quill.clipboard.dangerouslyPasteHTML(range.index, html);
             syncEditorToHidden();
-        }
-    }
-
-    function applyTemplate(type) {
-        let markup = defaultContent;
-        if (type === 'promo') {
-            markup = `<div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; background: #fff9f2; border-radius: 24px;"><div style="background: #ed8936; color: #fff; padding: 24px; border-radius: 20px;"><h1 style="margin: 0 0 10px; font-size: 28px;">Offre limitée</h1><p style="margin: 0 0 14px; line-height: 1.6;">Profitez d’une remise exclusive jusqu’à la fin de la semaine.</p><a href="#" style="display:inline-block; background:#fff; color:#ed8936; padding:10px 16px; border-radius:999px; font-weight:700; text-decoration:none;">Profiter de l’offre</a></div><div style="padding: 20px 0;"><h2 style="font-size: 20px; margin: 0 0 10px; color:#2d3748;">Ce qui vous attend</h2><p style="margin: 0; color:#4a5568; line-height:1.7;">Accès immédiat, accompagnement et support prioritaire.</p></div></div>`;
-        }
-
-        editor.innerHTML = markup;
-        syncEditorToHidden();
-    }
-
-    function insertImage() {
-        const imageUrl = prompt('URL de l’image à insérer dans le contenu (https://...)');
-        if (!imageUrl) {
-            return;
-        }
-
-        const sanitizedUrl = imageUrl.trim();
-        if (!/^https?:\/\//i.test(sanitizedUrl)) {
-            alert('Veuillez saisir une URL d’image valide commençant par http:// ou https://');
-            return;
-        }
-
-        insertImageTag(sanitizedUrl);
-    }
-
-    function uploadImage() {
-        const imageFileInput = document.getElementById('imageFileInput');
-        if (imageFileInput) {
-            imageFileInput.click();
         }
     }
 
     function insertImageFromUrlInput() {
         const imageUrlInput = document.getElementById('imageSourceUrl');
         if (!imageUrlInput) {
-            insertImage();
             return;
         }
 
@@ -206,8 +273,35 @@ function initializeNewsletterBuilder() {
             return;
         }
 
-        insertImageTag(imageUrl);
+        const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+        quill.insertEmbed(range.index, 'image', imageUrl, 'user');
+        quill.setSelection(range.index + 1, 0);
         imageUrlInput.value = '';
+        syncEditorToHidden();
+    }
+
+    function insertImage() {
+        const imageUrl = prompt('URL de l’image à insérer dans le contenu (https://...)');
+        if (!imageUrl) {
+            return;
+        }
+
+        if (!/^https?:\/\//i.test(imageUrl.trim())) {
+            alert('Veuillez saisir une URL d’image valide commençant par http:// ou https://');
+            return;
+        }
+
+        const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+        quill.insertEmbed(range.index, 'image', imageUrl.trim(), 'user');
+        quill.setSelection(range.index + 1, 0);
+        syncEditorToHidden();
+    }
+
+    function uploadImage() {
+        const imageFileInput = document.getElementById('imageFileInput');
+        if (imageFileInput) {
+            imageFileInput.click();
+        }
     }
 
     function handleImageUpload(event) {
@@ -225,16 +319,13 @@ function initializeNewsletterBuilder() {
         reader.onload = function(e) {
             const dataUrl = e.target?.result;
             if (typeof dataUrl === 'string') {
-                insertImageTag(dataUrl);
+                const range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+                quill.insertEmbed(range.index, 'image', dataUrl, 'user');
+                quill.setSelection(range.index + 1, 0);
+                syncEditorToHidden();
             }
         };
         reader.readAsDataURL(file);
-    }
-
-    function insertImageTag(src) {
-        const imageHtml = `<div style="text-align:center; margin: 16px 0;"><img src="${src}" alt="Image de la newsletter" style="max-width:100%; height:auto; border-radius:16px;"></div>`;
-        editor.insertAdjacentHTML('beforeend', imageHtml);
-        syncEditorToHidden();
     }
 
     function loadTemplateById(templateId) {
@@ -249,7 +340,7 @@ function initializeNewsletterBuilder() {
             return;
         }
 
-        editor.innerHTML = template.content || defaultContent;
+        setEditorHtml(template.content || defaultContent);
         const subjectInput = document.getElementById('subject');
         if (subjectInput && template.subject) {
             subjectInput.value = template.subject;
@@ -257,31 +348,18 @@ function initializeNewsletterBuilder() {
         syncEditorToHidden();
     }
 
-    toolbarButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const command = button.getAttribute('data-command');
-            const value = button.getAttribute('data-value');
-            runEditorCommand(command, value);
-            button.classList.toggle('is-active', ['bold', 'italic', 'underline'].includes(command));
-        });
-    });
-
     document.querySelectorAll('[data-insert-block]').forEach(button => {
         button.addEventListener('click', () => insertBlock(button.getAttribute('data-insert-block')));
     });
 
-    document.querySelectorAll('[data-template-id]').forEach(button => {
-        button.addEventListener('click', () => loadTemplateById(button.getAttribute('data-template-id')));
-    });
+    const imageUrlInsertButton = document.querySelector('[data-action="insert-image-url"]');
+    if (imageUrlInsertButton) {
+        imageUrlInsertButton.addEventListener('click', insertImageFromUrlInput);
+    }
 
     const imageInsertButton = document.querySelector('[data-action="insert-image"]');
     if (imageInsertButton) {
         imageInsertButton.addEventListener('click', insertImage);
-    }
-
-    const imageUrlInsertButton = document.querySelector('[data-action="insert-image-url"]');
-    if (imageUrlInsertButton) {
-        imageUrlInsertButton.addEventListener('click', insertImageFromUrlInput);
     }
 
     const imageUploadButton = document.querySelector('[data-action="upload-image"]');
@@ -296,18 +374,21 @@ function initializeNewsletterBuilder() {
 
     document.querySelectorAll('[data-action="reset"]').forEach(button => {
         button.addEventListener('click', () => {
-            editor.innerHTML = defaultContent;
+            setEditorHtml(defaultContent);
             syncEditorToHidden();
         });
     });
 
-    editor.addEventListener('input', syncEditorToHidden);
-    editor.addEventListener('blur', syncEditorToHidden);
+    document.querySelectorAll('[data-template-id]').forEach(button => {
+        button.addEventListener('click', () => loadTemplateById(button.getAttribute('data-template-id')));
+    });
+
+    quill.on('text-change', syncEditorToHidden);
 
     const form = hiddenContent.closest('form');
     if (form) {
         form.addEventListener('submit', () => {
-            hiddenContent.value = editor.innerHTML.trim() || defaultContent;
+            hiddenContent.value = quill.root.innerHTML.trim() || defaultContent;
         });
     }
 
