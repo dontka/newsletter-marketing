@@ -115,6 +115,13 @@ function initializeNewsletterBuilder() {
     const imageAlignButtons = document.querySelectorAll('[data-image-align]');
     let activeImageElement = null;
     let isApplyingEditorContent = false;
+    let previewRefreshTimer = null;
+
+    function updatePreview(markup) {
+        const content = markup || quill.root.innerHTML.trim() || defaultContent;
+        previewFrame.srcdoc = buildPreviewMarkup(content);
+        hiddenContent.value = content;
+    }
 
     function setEditorHtml(html) {
         const content = html || defaultContent;
@@ -128,10 +135,9 @@ function initializeNewsletterBuilder() {
             window.setTimeout(() => {
                 isApplyingEditorContent = false;
                 quill.enable(true);
+                updatePreview(content);
             }, 0);
         }
-
-        previewFrame.srcdoc = buildPreviewMarkup(content);
     }
 
     function updateImageControls() {
@@ -215,9 +221,14 @@ function initializeNewsletterBuilder() {
             return;
         }
 
-        const value = quill.root.innerHTML.trim() || defaultContent;
-        hiddenContent.value = value;
-        previewFrame.srcdoc = buildPreviewMarkup(value);
+        if (previewRefreshTimer) {
+            window.clearTimeout(previewRefreshTimer);
+        }
+
+        previewRefreshTimer = window.setTimeout(() => {
+            const value = quill.root.innerHTML.trim() || defaultContent;
+            updatePreview(value);
+        }, 40);
     }
 
     function syncHiddenToEditor() {
@@ -384,6 +395,11 @@ function initializeNewsletterBuilder() {
     });
 
     quill.on('text-change', syncEditorToHidden);
+    quill.on('selection-change', () => {
+        if (!isApplyingEditorContent) {
+            syncEditorToHidden();
+        }
+    });
 
     const form = hiddenContent.closest('form');
     if (form) {
