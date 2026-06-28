@@ -284,18 +284,19 @@ class NewsletterController
 
     private function seedDefaultEmailTemplates(\PDO $pdo): void
     {
-        $stmt = $pdo->query('SELECT COUNT(*) FROM email_templates');
-        $count = (int) $stmt->fetchColumn();
-        if ($count > 0) {
-            return;
-        }
-
         $now = date('Y-m-d H:i:s');
         $defaultTemplates = EmailTemplateCatalog::getDefaultTemplates();
+        $select = $pdo->prepare('SELECT COUNT(*) FROM email_templates WHERE name = :name');
+        $insert = $pdo->prepare('INSERT INTO email_templates (name, category, subject, content, plain_text, created_by, created_at, updated_at) VALUES (:name, :category, :subject, :content, :plain_text, :created_by, :created_at, :updated_at)');
 
-        $stmt = $pdo->prepare('INSERT INTO email_templates (name, category, subject, content, plain_text, created_by, created_at, updated_at) VALUES (:name, :category, :subject, :content, :plain_text, :created_by, :created_at, :updated_at)');
         foreach ($defaultTemplates as $template) {
-            $stmt->execute([
+            $select->execute(['name' => $template['name']]);
+            $count = (int) $select->fetchColumn();
+            if ($count > 0) {
+                continue;
+            }
+
+            $insert->execute([
                 'name' => $template['name'],
                 'category' => $template['category'],
                 'subject' => $template['subject'],
