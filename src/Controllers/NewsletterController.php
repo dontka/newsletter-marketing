@@ -174,13 +174,15 @@ class NewsletterController
             name VARCHAR(255) NOT NULL,
             category VARCHAR(100) NOT NULL DEFAULT "general",
             subject VARCHAR(255) NOT NULL,
-            content TEXT NOT NULL,
+            content MEDIUMTEXT NOT NULL,
             plain_text TEXT DEFAULT NULL,
             created_by VARCHAR(100) NOT NULL DEFAULT "system",
             created_at DATETIME NOT NULL,
             updated_at DATETIME DEFAULT NULL,
             INDEX ix_email_templates_category (category)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+
+        $this->ensureMediumTextColumn($pdo, 'email_templates', 'content');
     }
 
     private function seedDefaultEmailTemplates(\PDO $pdo): void
@@ -218,7 +220,7 @@ class NewsletterController
         }
 
         if (!in_array('content', $columns, true)) {
-            $pdo->exec("ALTER TABLE newsletters ADD COLUMN content TEXT NOT NULL");
+            $pdo->exec("ALTER TABLE newsletters ADD COLUMN content MEDIUMTEXT NOT NULL");
         }
 
         if (!in_array('plain_text', $columns, true)) {
@@ -251,6 +253,24 @@ class NewsletterController
 
         if (!in_array('tracking_enabled', $columns, true)) {
             $pdo->exec("ALTER TABLE newsletters ADD COLUMN tracking_enabled TINYINT(1) NOT NULL DEFAULT 1");
+        }
+
+        $this->ensureMediumTextColumn($pdo, 'newsletters', 'content');
+    }
+
+    private function ensureMediumTextColumn(\PDO $pdo, string $table, string $column): void
+    {
+        $stmt = $pdo->prepare('SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND COLUMN_NAME = :column');
+        $stmt->execute(['table' => $table, 'column' => $column]);
+        $columnInfo = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$columnInfo) {
+            return;
+        }
+
+        $dataType = strtolower($columnInfo['DATA_TYPE'] ?? '');
+        if ($dataType !== 'mediumtext' && $dataType !== 'longtext') {
+            $pdo->exec("ALTER TABLE {$table} MODIFY COLUMN {$column} MEDIUMTEXT NOT NULL");
         }
     }
 
