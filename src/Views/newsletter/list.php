@@ -26,6 +26,13 @@
     </nav>
 
     <div class="container page-section">
+        <?php if (!empty($_SESSION['flash_message'])): ?>
+            <div class="alert alert-info">
+                <?= htmlspecialchars($_SESSION['flash_message'], ENT_QUOTES, 'UTF-8') ?>
+            </div>
+            <?php unset($_SESSION['flash_message']); ?>
+        <?php endif; ?>
+
         <div class="flex-between mb-4">
             <h1>Newsletters</h1>
             <a href="/newsletter/create" class="btn btn-primary">+ Nouvelle Newsletter</a>
