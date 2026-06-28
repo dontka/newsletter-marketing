@@ -81,62 +81,61 @@
                 <p>Aucun abonné trouvé.</p>
             </div>
         <?php else: ?>
-            <div class="card mb-3">
-                <form method="post" action="/subscribers/bulk" class="form-row align-items-end">
-                    <div class="col">
-                        <div class="form-group">
-                            <label for="bulk_action">Action groupée</label>
-                            <select id="bulk_action" name="bulk_action">
-                                <option value="activate">Activer</option>
-                                <option value="deactivate">Désactiver</option>
-                                <option value="pending">Mettre en attente</option>
-                                <option value="blocked">Bloquer</option>
-                                <option value="delete">Supprimer</option>
-                            </select>
+            <form method="post" action="/subscribers/bulk">
+                <div class="card mb-3">
+                    <div class="form-row align-items-end">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="bulk_action">Action groupée</label>
+                                <select id="bulk_action" name="bulk_action">
+                                    <option value="activate">Activer</option>
+                                    <option value="deactivate">Désactiver</option>
+                                    <option value="pending">Mettre en attente</option>
+                                    <option value="blocked">Bloquer</option>
+                                    <option value="delete">Supprimer</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col self-end">
+                            <button type="submit" class="btn btn-primary">Appliquer à la sélection</button>
                         </div>
                     </div>
-                    <div class="col self-end">
-                        <button type="submit" class="btn btn-primary">Appliquer à la sélection</button>
-                    </div>
-                </form>
-            </div>
+                </div>
 
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th><input type="checkbox" id="select-all-subscribers" aria-label="Sélectionner tous les abonnés"></th>
-                            <th>Email</th>
-                            <th>Nom</th>
-                            <th>Status</th>
-                            <th>Inscrit le</th>
-                            <th>Confirmé le</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($subscribers as $sub): ?>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
                             <tr>
-                                <td><input type="checkbox" name="subscriber_ids[]" value="<?= (int) $sub['id'] ?>" class="subscriber-checkbox"></td>
-                                <td><?= htmlspecialchars($sub['email'], ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars($sub['name'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars($sub['status'], ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars($sub['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><?= htmlspecialchars($sub['confirmed_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
-                                <td>
-                                    <div class="table-actions">
-                                        <a href="/subscribers/edit?id=<?= (int) $sub['id'] ?>" class="btn btn-secondary btn-sm">Éditer</a>
-                                        <form method="post" action="/subscribers/delete" class="inline-form" onsubmit="return confirm('Supprimer cet abonné ?');">
-                                            <input type="hidden" name="id" value="<?= (int) $sub['id'] ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
-                                        </form>
-                                    </div>
-                                </td>
+                                <th><input type="checkbox" id="select-all-subscribers" aria-label="Sélectionner tous les abonnés"></th>
+                                <th>Email</th>
+                                <th>Nom</th>
+                                <th>Status</th>
+                                <th>Inscrit le</th>
+                                <th>Confirmé le</th>
+                                <th>Actions</th>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($subscribers as $sub): ?>
+                                <tr>
+                                    <td><input type="checkbox" name="subscriber_ids[]" value="<?= (int) $sub['id'] ?>" class="subscriber-checkbox"></td>
+                                    <td><?= htmlspecialchars($sub['email'], ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars($sub['name'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars($sub['status'], ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars($sub['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td><?= htmlspecialchars($sub['confirmed_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <a href="/subscribers/edit?id=<?= (int) $sub['id'] ?>" class="btn btn-secondary btn-sm">Éditer</a>
+                                            <a href="/subscribers/delete?id=<?= (int) $sub['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Supprimer cet abonné ?');">Supprimer</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
         <?php endif; ?>
     </div>
 

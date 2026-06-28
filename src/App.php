@@ -67,6 +67,7 @@ class App
         $this->router->add('GET', '/subscribers/export', [$subscribers, 'export']);
         $this->router->add('GET', '/subscribers/template', [$subscribers, 'template']);
         $this->router->add('POST', '/subscribers/delete', [$subscribers, 'delete']);
+        $this->router->add('GET', '/subscribers/delete', [$subscribers, 'delete']);
         $this->router->add('POST', '/subscribers/bulk', [$subscribers, 'bulkAction']);
 
         $this->router->add('GET', '/users', [$admin, 'users']);

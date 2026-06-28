@@ -195,7 +195,7 @@ class SubscribersController
     {
         Auth::requireRole('admin');
 
-        $id = (int) ($_POST['id'] ?? 0);
+        $id = (int) ($_POST['id'] ?? $_GET['id'] ?? 0);
         if ($id <= 0) {
             $_SESSION['subscriber_message'] = 'Identifiant invalide.';
             header('Location: /subscribers');
