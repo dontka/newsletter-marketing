@@ -129,8 +129,10 @@ class SendQueueProcessor
         if (strpos($content, '{unsubscribe_link}') !== false) {
             $content = str_replace('{unsubscribe_link}', '<a href="' . htmlspecialchars($unsubscribeUrl, ENT_QUOTES, 'UTF-8') . '">Se désabonner</a>', $content);
         } else {
-            $content .= "\n<p><a href=\"" . htmlspecialchars($unsubscribeUrl, ENT_QUOTES, 'UTF-8') . "\">Se désabonner</a></p>";
+            $content .= "\n<p style=\"margin: 24px 0 0; font-size: 13px; color: #64748b;\"><a href=\"" . htmlspecialchars($unsubscribeUrl, ENT_QUOTES, 'UTF-8') . "\" style=\"color: #64748b; text-decoration: underline;\">Se désabonner</a></p>";
         }
+
+        $content = $this->wrapEmailContent($content);
 
         try {
             $success = $this->mailer->send($email, $subject, $content, $plainText);
@@ -156,6 +158,44 @@ class SendQueueProcessor
         }
 
         usleep(500000);
+    }
+
+    private function wrapEmailContent(string $content): string
+    {
+        $safeContent = trim($content);
+        if ($safeContent === '') {
+            $safeContent = '<p>Bonjour,</p>';
+        }
+
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>Newsletter</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">
+    Contenu de votre newsletter
+  </div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f4f7fb;margin:0;padding:0;width:100%;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:680px;width:100%;background-color:#ffffff;border-radius:18px;overflow:hidden;">
+          <tr>
+            <td style="padding:0;">
+              {$safeContent}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+HTML;
     }
 
     private function handleFailedEmail(int $jobId, string $error = ''): void
