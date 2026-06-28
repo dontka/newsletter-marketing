@@ -81,10 +81,31 @@
                 <p>Aucun abonné trouvé.</p>
             </div>
         <?php else: ?>
+            <div class="card mb-3">
+                <form method="post" action="/subscribers/bulk" class="form-row align-items-end">
+                    <div class="col">
+                        <div class="form-group">
+                            <label for="bulk_action">Action groupée</label>
+                            <select id="bulk_action" name="bulk_action">
+                                <option value="activate">Activer</option>
+                                <option value="deactivate">Désactiver</option>
+                                <option value="pending">Mettre en attente</option>
+                                <option value="blocked">Bloquer</option>
+                                <option value="delete">Supprimer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col self-end">
+                        <button type="submit" class="btn btn-primary">Appliquer à la sélection</button>
+                    </div>
+                </form>
+            </div>
+
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
+                            <th><input type="checkbox" id="select-all-subscribers" aria-label="Sélectionner tous les abonnés"></th>
                             <th>Email</th>
                             <th>Nom</th>
                             <th>Status</th>
@@ -96,6 +117,7 @@
                     <tbody>
                         <?php foreach ($subscribers as $sub): ?>
                             <tr>
+                                <td><input type="checkbox" name="subscriber_ids[]" value="<?= (int) $sub['id'] ?>" class="subscriber-checkbox"></td>
                                 <td><?= htmlspecialchars($sub['email'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($sub['name'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($sub['status'], ENT_QUOTES, 'UTF-8') ?></td>

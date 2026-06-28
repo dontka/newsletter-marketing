@@ -211,6 +211,54 @@ class SubscribersController
         exit;
     }
 
+    public function bulkAction(): void
+    {
+        Auth::requireRole('admin');
+
+        $ids = $_POST['subscriber_ids'] ?? [];
+        $action = $_POST['bulk_action'] ?? '';
+
+        if (!is_array($ids) || $ids === [] || !in_array($action, ['activate', 'deactivate', 'delete', 'pending', 'blocked'], true)) {
+            $_SESSION['subscriber_message'] = 'Aucune sélection ou action invalide.';
+            header('Location: /subscribers');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $ids = array_map('intval', $ids);
+        $ids = array_filter($ids, static fn (int $id): bool => $id > 0);
+
+        if ($ids === []) {
+            $_SESSION['subscriber_message'] = 'Aucune sélection valide.';
+            header('Location: /subscribers');
+            exit;
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+
+        if ($action === 'delete') {
+            $stmt = $pdo->prepare('DELETE FROM subscribers WHERE id IN (' . $placeholders . ')');
+            $stmt->execute($ids);
+            $_SESSION['subscriber_message'] = 'Abonnés supprimés.';
+        } else {
+            $status = match ($action) {
+                'activate' => 'active',
+                'deactivate' => 'inactive',
+                'pending' => 'pending',
+                'blocked' => 'blocked',
+                default => 'pending',
+            };
+
+            $stmt = $pdo->prepare('UPDATE subscribers SET status = ? WHERE id IN (' . $placeholders . ')');
+            $params = array_merge([$status], $ids);
+            $stmt->execute($params);
+            $_SESSION['subscriber_message'] = 'Statut appliqué à la sélection.';
+        }
+
+        header('Location: /subscribers');
+        exit;
+    }
+
     private function normalizeStatus(string $status): string
     {
         $allowed = ['pending', 'active', 'inactive', 'blocked'];

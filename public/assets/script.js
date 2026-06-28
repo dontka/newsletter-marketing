@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeMobileMenu();
     initializeSearch();
     initializeNewsletterBuilder();
+    initializeBulkSubscriberSelection();
 });
 
 /**
@@ -425,6 +426,28 @@ function initializeSearch() {
             }, 500);
         });
     }
+}
+
+function initializeBulkSubscriberSelection() {
+    const selectAll = document.getElementById('select-all-subscribers');
+    const checkboxes = document.querySelectorAll('.subscriber-checkbox');
+
+    if (!selectAll) {
+        return;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAll.checked;
+        });
+    });
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(checkboxes).every(item => item.checked);
+            selectAll.checked = allChecked;
+        });
+    });
 }
 
 /**
