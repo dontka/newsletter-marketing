@@ -47,6 +47,7 @@
                             <th>Suivi</th>
                             <th>Créée le</th>
                             <th>Prévue le</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -87,6 +88,15 @@
                                 <td><?= !empty($nl['tracking_enabled']) ? 'Activé' : 'Désactivé' ?></td>
                                 <td><?= htmlspecialchars($nl['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($nl['scheduled_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                                <td>
+                                    <div class="table-actions">
+                                        <a href="/newsletter/edit?id=<?= (int) $nl['id'] ?>" class="btn btn-secondary btn-sm">Éditer</a>
+                                        <form method="post" action="/newsletter/delete" class="inline-form" onsubmit="return confirm('Supprimer cette newsletter ?');">
+                                            <input type="hidden" name="id" value="<?= (int) $nl['id'] ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

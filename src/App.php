@@ -55,6 +55,9 @@ class App
         $this->router->add('GET', '/newsletter', [$newsletter, 'list']);
         $this->router->add('GET', '/newsletter/create', [$newsletter, 'create']);
         $this->router->add('POST', '/newsletter/save', [$newsletter, 'save']);
+        $this->router->add('GET', '/newsletter/edit', [$newsletter, 'edit']);
+        $this->router->add('POST', '/newsletter/update', [$newsletter, 'update']);
+        $this->router->add('POST', '/newsletter/delete', [$newsletter, 'delete']);
 
         $subscribers = new SubscribersController();
         $this->router->add('GET', '/subscribers', [$subscribers, 'list']);

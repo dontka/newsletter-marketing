@@ -104,10 +104,107 @@ class NewsletterController
                 $this->createSendJobs($pdo, $newsletterId, $audience);
             }
 
-            View::render('message', ['message' => 'Newsletter créée avec succès.']);
+            $_SESSION['flash_message'] = 'Newsletter créée avec succès.';
+            header('Location: /newsletter');
+            exit;
         } catch (Exception $e) {
-            View::render('message', ['message' => 'Erreur lors de la création: ' . $e->getMessage()]);
+            $_SESSION['flash_message'] = 'Erreur lors de la création : ' . $e->getMessage();
+            header('Location: /newsletter');
+            exit;
         }
+    }
+
+    public function edit(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_GET['id'] ?? 0);
+        $pdo = DB::getConnection();
+        $this->ensureNewsletterColumns($pdo);
+        $newsletter = $this->getNewsletterById($pdo, $id);
+
+        if ($newsletter === null) {
+            $_SESSION['flash_message'] = 'Newsletter introuvable.';
+            header('Location: /newsletter');
+            exit;
+        }
+
+        $this->ensureEmailTemplateTable($pdo);
+        $templates = $this->getEmailTemplates($pdo);
+
+        View::render('newsletter/edit', ['newsletter' => $newsletter, 'templates' => $templates]);
+    }
+
+    public function update(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $subject = trim($_POST['subject'] ?? '');
+        $content = $_POST['content'] ?? '';
+        $plainText = $_POST['plain_text'] ?? '';
+        $status = $this->normalizeOption($_POST['status'] ?? 'draft', 'draft', ['draft', 'scheduled', 'sending', 'sent']);
+        $scheduledAt = $_POST['scheduled_at'] ?? null;
+        $campaignType = $this->normalizeOption($_POST['campaign_type'] ?? 'announcement', 'announcement', ['announcement', 'promotion', 'educational', 'product']);
+        $audience = $this->normalizeOption($_POST['audience'] ?? 'all', 'all', ['all', 'active', 'new', 'vip']);
+        $trackingEnabled = filter_input(INPUT_POST, 'tracking', FILTER_VALIDATE_INT);
+        if ($trackingEnabled === false || $trackingEnabled === null) {
+            $trackingEnabled = 1;
+        }
+
+        if ($id <= 0 || $subject === '' || $content === '') {
+            $_SESSION['flash_message'] = 'Sujet et contenu sont obligatoires.';
+            header('Location: /newsletter');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $this->ensureNewsletterColumns($pdo);
+        $stmt = $pdo->prepare('UPDATE newsletters SET subject = :subject, content = :content, plain_text = :plain_text, status = :status, scheduled_at = :scheduled_at, campaign_type = :campaign_type, audience = :audience, tracking_enabled = :tracking_enabled WHERE id = :id');
+        $stmt->execute([
+            'id' => $id,
+            'subject' => $subject,
+            'content' => $content,
+            'plain_text' => $plainText,
+            'status' => $status,
+            'scheduled_at' => $scheduledAt ?: null,
+            'campaign_type' => $campaignType,
+            'audience' => $audience,
+            'tracking_enabled' => (int) $trackingEnabled,
+        ]);
+
+        $_SESSION['flash_message'] = 'Newsletter mise à jour.';
+        header('Location: /newsletter');
+        exit;
+    }
+
+    public function delete(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $_SESSION['flash_message'] = 'Identifiant invalide.';
+            header('Location: /newsletter');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $stmt = $pdo->prepare('DELETE FROM newsletters WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+
+        $_SESSION['flash_message'] = 'Newsletter supprimée.';
+        header('Location: /newsletter');
+        exit;
+    }
+
+    private function getNewsletterById(\PDO $pdo, int $id): ?array
+    {
+        $stmt = $pdo->prepare('SELECT id, subject, content, plain_text, status, scheduled_at, campaign_type, audience, tracking_enabled, created_at, created_by FROM newsletters WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        $newsletter = $stmt->fetch();
+
+        return $newsletter ?: null;
     }
 
     private function createSendJobs(\PDO $pdo, int $newsletterId, string $audience): void
