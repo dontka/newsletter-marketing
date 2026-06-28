@@ -793,6 +793,7 @@ a:hover {
     padding: 1rem;
     background: white;
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
 
 .editor-toolbar-actions {
@@ -828,12 +829,15 @@ a:hover {
     padding: 1.25rem;
     background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
     outline: none;
+    overflow: hidden;
+    max-width: 100%;
 }
 
 .content-editor img {
     cursor: pointer;
     max-width: 100%;
     height: auto;
+    display: block;
 }
 
 .image-edit-controls {
@@ -913,6 +917,7 @@ a:hover {
     border: 1px solid var(--border-color);
     border-radius: 14px;
     background: white;
+    overflow: hidden;
 }
 
 /* ============================================
