@@ -90,6 +90,7 @@
                             <th>Status</th>
                             <th>Inscrit le</th>
                             <th>Confirmé le</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -100,6 +101,15 @@
                                 <td><?= htmlspecialchars($sub['status'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($sub['created_at'], ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($sub['confirmed_at'] ?? '-', ENT_QUOTES, 'UTF-8') ?></td>
+                                <td>
+                                    <div class="table-actions">
+                                        <a href="/subscribers/edit?id=<?= (int) $sub['id'] ?>" class="btn btn-secondary btn-sm">Éditer</a>
+                                        <form method="post" action="/subscribers/delete" class="inline-form" onsubmit="return confirm('Supprimer cet abonné ?');">
+                                            <input type="hidden" name="id" value="<?= (int) $sub['id'] ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                                        </form>
+                                    </div>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

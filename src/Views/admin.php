@@ -20,6 +20,7 @@
                 <li><a href="/admin/dashboard" class="active">Dashboard</a></li>
                 <li><a href="/subscribers">Abonnés</a></li>
                 <li><a href="/newsletter">Newsletters</a></li>
+                <li><a href="/users">Utilisateurs</a></li>
                 <li><a href="/admin/logout">Déconnexion</a></li>
             </ul>
         </div>

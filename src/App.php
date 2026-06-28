@@ -61,9 +61,18 @@ class App
 
         $subscribers = new SubscribersController();
         $this->router->add('GET', '/subscribers', [$subscribers, 'list']);
+        $this->router->add('GET', '/subscribers/edit', [$subscribers, 'edit']);
+        $this->router->add('POST', '/subscribers/update', [$subscribers, 'update']);
         $this->router->add('POST', '/subscribers/import', [$subscribers, 'import']);
         $this->router->add('GET', '/subscribers/export', [$subscribers, 'export']);
         $this->router->add('GET', '/subscribers/template', [$subscribers, 'template']);
+        $this->router->add('POST', '/subscribers/delete', [$subscribers, 'delete']);
+
+        $this->router->add('GET', '/users', [$admin, 'users']);
+        $this->router->add('GET', '/users/edit', [$admin, 'editUser']);
+        $this->router->add('POST', '/users/update', [$admin, 'updateUser']);
+        $this->router->add('POST', '/users/update-role', [$admin, 'updateUserRole']);
+        $this->router->add('POST', '/users/delete', [$admin, 'deleteUser']);
 
         $tracking = new TrackingController();
         $this->router->add('GET', '/open.gif', [$tracking, 'open']);

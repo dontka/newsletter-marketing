@@ -133,4 +133,89 @@ class SubscribersController
             ['email' => 'contact@example.com', 'name' => 'Jean Dupont', 'status' => 'active', 'created_at' => date('Y-m-d H:i:s')],
         ], 'subscribers_template.xlsx');
     }
+
+    public function edit(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            $_SESSION['subscriber_message'] = 'Identifiant invalide.';
+            header('Location: /subscribers');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $stmt = $pdo->prepare('SELECT id, email, name, status, created_at, confirmed_at FROM subscribers WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        $subscriber = $stmt->fetch();
+
+        if (!$subscriber) {
+            $_SESSION['subscriber_message'] = 'Abonné introuvable.';
+            header('Location: /subscribers');
+            exit;
+        }
+
+        View::render('subscribers/edit', ['subscriber' => $subscriber]);
+    }
+
+    public function update(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $email = trim($_POST['email'] ?? '');
+        $name = trim($_POST['name'] ?? '');
+        $status = $this->normalizeStatus($_POST['status'] ?? 'pending');
+
+        if ($id <= 0 || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $_SESSION['subscriber_message'] = 'Email invalide.';
+            header('Location: /subscribers');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $duplicateStmt = $pdo->prepare('SELECT id FROM subscribers WHERE email = :email AND id != :id LIMIT 1');
+        $duplicateStmt->execute(['email' => $email, 'id' => $id]);
+        if ($duplicateStmt->fetch()) {
+            $_SESSION['subscriber_message'] = 'Cet email est déjà utilisé.';
+            header('Location: /subscribers');
+            exit;
+        }
+
+        $stmt = $pdo->prepare('UPDATE subscribers SET email = :email, name = :name, status = :status WHERE id = :id');
+        $stmt->execute(['email' => $email, 'name' => $name, 'status' => $status, 'id' => $id]);
+
+        $_SESSION['subscriber_message'] = 'Abonné mis à jour.';
+        header('Location: /subscribers');
+        exit;
+    }
+
+    public function delete(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $_SESSION['subscriber_message'] = 'Identifiant invalide.';
+            header('Location: /subscribers');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $stmt = $pdo->prepare('DELETE FROM subscribers WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+
+        $_SESSION['subscriber_message'] = 'Abonné supprimé.';
+        header('Location: /subscribers');
+        exit;
+    }
+
+    private function normalizeStatus(string $status): string
+    {
+        $allowed = ['pending', 'active', 'inactive', 'blocked'];
+        $normalized = strtolower(trim($status));
+
+        return in_array($normalized, $allowed, true) ? $normalized : 'pending';
+    }
 }

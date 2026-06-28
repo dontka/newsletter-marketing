@@ -62,6 +62,117 @@ class AdminController
         View::render('admin', ['user' => $userInfo]);
     }
 
+    public function users(): void
+    {
+        Auth::requireRole('admin');
+
+        $pdo = DB::getConnection();
+        $stmt = $pdo->prepare('SELECT id, afiazone_id, email, name, role, created_at, last_login FROM users ORDER BY created_at DESC');
+        $stmt->execute();
+        $users = $stmt->fetchAll();
+
+        View::render('admin/users', ['users' => $users]);
+    }
+
+    public function editUser(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            $_SESSION['flash_message'] = 'Identifiant invalide.';
+            header('Location: /users');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $stmt = $pdo->prepare('SELECT id, afiazone_id, email, name, role, created_at, last_login FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        $user = $stmt->fetch();
+
+        if (!$user) {
+            $_SESSION['flash_message'] = 'Utilisateur introuvable.';
+            header('Location: /users');
+            exit;
+        }
+
+        View::render('admin/user-edit', ['user' => $user]);
+    }
+
+    public function updateUser(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $email = trim($_POST['email'] ?? '');
+        $name = trim($_POST['name'] ?? '');
+        $role = $_POST['role'] ?? 'admin';
+
+        if ($id <= 0 || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || !in_array($role, ['admin', 'editor', 'viewer'], true)) {
+            $_SESSION['flash_message'] = 'Données invalides.';
+            header('Location: /users');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $duplicateStmt = $pdo->prepare('SELECT id FROM users WHERE email = :email AND id != :id LIMIT 1');
+        $duplicateStmt->execute(['email' => $email, 'id' => $id]);
+        if ($duplicateStmt->fetch()) {
+            $_SESSION['flash_message'] = 'Cet email est déjà utilisé.';
+            header('Location: /users');
+            exit;
+        }
+
+        $stmt = $pdo->prepare('UPDATE users SET email = :email, name = :name, role = :role WHERE id = :id');
+        $stmt->execute(['email' => $email, 'name' => $name, 'role' => $role, 'id' => $id]);
+
+        $_SESSION['flash_message'] = 'Utilisateur mis à jour.';
+        header('Location: /users');
+        exit;
+    }
+
+    public function updateUserRole(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        $role = $_POST['role'] ?? 'admin';
+        $allowedRoles = ['admin', 'editor', 'viewer'];
+        if ($id <= 0 || !in_array($role, $allowedRoles, true)) {
+            $_SESSION['flash_message'] = 'Rôle invalide.';
+            header('Location: /users');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $stmt = $pdo->prepare('UPDATE users SET role = :role WHERE id = :id');
+        $stmt->execute(['role' => $role, 'id' => $id]);
+
+        $_SESSION['flash_message'] = 'Rôle mis à jour.';
+        header('Location: /users');
+        exit;
+    }
+
+    public function deleteUser(): void
+    {
+        Auth::requireRole('admin');
+
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $_SESSION['flash_message'] = 'Identifiant invalide.';
+            header('Location: /users');
+            exit;
+        }
+
+        $pdo = DB::getConnection();
+        $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+
+        $_SESSION['flash_message'] = 'Utilisateur supprimé.';
+        header('Location: /users');
+        exit;
+    }
+
     public function queue(): void
     {
         Auth::requireRole('admin');
